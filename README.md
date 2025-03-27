@@ -49,4 +49,7 @@ Sigue estos pasos para levantar el proyecto correctamente:
 
     http://127.0.0.1:8000/api/check-availability?start_time=2025-04-04 13:00:00&end_time=2025-04-04 14:00:00
 
+    Descargar excel 
+    http://127.0.0.1:8000/export-excel
+
     ```
