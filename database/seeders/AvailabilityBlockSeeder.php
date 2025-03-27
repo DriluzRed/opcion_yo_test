@@ -43,17 +43,29 @@ class AvailabilityBlockSeeder extends Seeder
                     while ($timeSlot < $workEnd) {
                         $endSlot = (clone $timeSlot)->addHour();
 
+                        // Si es hora de almuerzo, marcar como 'break'
                         if ($timeSlot->gte($lunchStart) && $timeSlot->lt($lunchEnd)) {
-                            $timeSlot->addHour();
+                            AvailabilityBlock::create([
+                                'employee_id' => $employee->id,
+                                'date' => $date->toDateString(),
+                                'start_time' => $timeSlot->toTimeString(),
+                                'end_time' => $endSlot->toTimeString(),
+                                'type' => 'break',
+                            ]);
+
+                            Log::info("Created lunch break for employee {$employee->id} on {$date->toDateString()} from {$timeSlot->toTimeString()} to {$endSlot->toTimeString()}");
+
+                            $timeSlot->addHour(); 
                             continue;
                         }
 
+                        
                         AvailabilityBlock::create([
                             'employee_id' => $employee->id,
                             'date' => $date->toDateString(),
                             'start_time' => $timeSlot->toTimeString(),
                             'end_time' => $endSlot->toTimeString(),
-                            'type' => 'available',
+                            'type' => 'available', 
                         ]);
 
                         Log::info("Created availability block for employee {$employee->id} on {$date->toDateString()} from {$timeSlot->toTimeString()} to {$endSlot->toTimeString()}");

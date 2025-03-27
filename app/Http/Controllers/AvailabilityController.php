@@ -64,19 +64,24 @@ class AvailabilityController extends Controller
                 ->whereTime('start_time', '<=', $startNY->format('H:i:s'))
                 ->whereTime('end_time', '>=', $endNY->format('H:i:s'));
         })
-        ->whereDoesntHave('reservations', function ($query) use ($startNY, $endNY) {
-            $query->whereDate('reservation_date', $startNY->toDateString())
-                ->whereTime('start_time', '<', $endNY->format('H:i:s'))
-                ->whereTime('end_time', '>', $startNY->format('H:i:s'));
-        })
-        ->whereDoesntHave('availabilityBlocks', function ($query) use ($startNY, $endNY) {
-            $query->whereDate('date', $startNY->toDateString())
-                ->whereTime('start_time', '<', $endNY->format('H:i:s'))
-                ->whereTime('end_time', '>', $startNY->format('H:i:s'))
-                ->where('type', 'break'); // Excluir empleados en almuerzo
-        })
-        ->with(['workSchedules', 'availabilityBlocks', 'reservations'])
-        ->get();
+        ->with(['workSchedules', 'reservations', 'availabilityBlocks'])
+        ->get()
+        ->map(function ($employee) use ($startNY, $endNY) {
+            $employee->reservations = $employee->reservations->filter(function ($reservation) use ($startNY, $endNY) {
+                return $reservation->reservation_date == $startNY->toDateString() &&
+                    $reservation->start_time < $endNY->format('H:i:s') &&
+                    $reservation->end_time > $startNY->format('H:i:s');
+            });
+    
+            $employee->availabilityBlocks = $employee->availabilityBlocks->filter(function ($block) use ($startNY, $endNY) {
+                return $block->date == $startNY->toDateString() &&
+                    $block->start_time < $endNY->format('H:i:s') &&
+                    $block->end_time > $startNY->format('H:i:s') &&
+                    $block->type === 'break';
+            });
+    
+            return $employee;
+        });
     
         return response()->json([
             'date' => $startNY->toDateString(),
@@ -85,7 +90,6 @@ class AvailabilityController extends Controller
             'available_employees' => $availableEmployees,
         ]);
     }
-    
 
     public function getAvailableEmployees(Request $request)
     {
@@ -110,7 +114,7 @@ class AvailabilityController extends Controller
             $query->whereDate('date', $requestedTimeNY->toDateString())
                 ->whereTime('start_time', '<=', $requestedTimeNY->format('H:i:s'))
                 ->whereTime('end_time', '>', $requestedTimeNY->format('H:i:s'))
-                ->where('type', 'break'); // 🚀 Excluir empleados en horario de almuerzo
+                ->where('type', 'break');
         })
         ->with('workSchedules')
         ->get();
